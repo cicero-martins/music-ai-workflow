@@ -1,0 +1,33 @@
+# music-ai-workflow — dependências
+# Instale com: pip install -r requirements.txt
+
+# ── Ambiente Jupyter ──────────────────────────────────────────────────────────
+jupyter
+ipykernel
+ipywidgets
+
+# ── Áudio — processamento e I/O ───────────────────────────────────────────────
+soundfile>=0.12
+librosa>=0.10
+numpy>=1.24
+scipy>=1.11
+
+# ── Demucs — separação de stems ───────────────────────────────────────────────
+demucs>=4.0
+
+# ── ACE-Step 1.5 — instalação via git (veja instrução abaixo) ─────────────────
+# Instalar separadamente após clonar o repositório:
+#   pip install -e ./ACE-Step-1.5
+# Ou diretamente:
+#   pip install git+https://github.com/ace-step/ACE-Step-1.5.git
+
+# ── PyTorch — instale a versão compatível com seu CUDA em pytorch.org ─────────
+# Exemplo para CUDA 12.1:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Exemplo para CPU only:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# ── Utilitários ───────────────────────────────────────────────────────────────
+tqdm
+matplotlib
+IPython

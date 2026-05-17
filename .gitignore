@@ -1,0 +1,26 @@
+# Ambiente virtual
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Áudio — não commitar (arquivos grandes; manter backup separado)
+audio/raw/
+audio/stems/
+audio/output/
+
+# Modelos LoRA — pesados; não commitar
+models/
+
+# ACE-Step — clonar separadamente
+ACE-Step-1.5/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Variáveis de ambiente (API keys etc.)
+.env
