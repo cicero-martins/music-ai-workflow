@@ -13,8 +13,15 @@ audio/output/
 # Modelos LoRA — pesados; não commitar
 models/
 
+# Checkpoints baixados pela CLI do ACE-Step (caso caiam fora de ACE-Step-1.5/)
+checkpoints/
+notebooks/checkpoints/
+
 # ACE-Step — clonar separadamente
 ACE-Step-1.5/
+
+# Log local de sessões — pessoal, não commitar
+docs/sessoes.md
 
 # VS Code
 .vscode/
