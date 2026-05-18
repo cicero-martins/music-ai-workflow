@@ -1,33 +1,43 @@
 # music-ai-workflow — dependências
-# Instale com: pip install -r requirements.txt
+# Instale com (dentro do conda env "music-ai" com Python 3.11):
+#   pip install -r requirements.txt
+#
+# NOTA: PyTorch e ACE-Step são instalados separadamente (ver notebook 00_setup.ipynb)
+# porque PyTorch precisa do índice oficial com CUDA 12.8 e ACE-Step é instalado
+# via `pip install -e ./ACE-Step-1.5`.
 
 # ── Ambiente Jupyter ──────────────────────────────────────────────────────────
 jupyter
 ipykernel
 ipywidgets
 
-# ── Áudio — processamento e I/O ───────────────────────────────────────────────
-soundfile>=0.12
-librosa>=0.10
-numpy>=1.24
-scipy>=1.11
-
-# ── Demucs — separação de stems ───────────────────────────────────────────────
+# ── Demucs — separação de stems (não vem com ACE-Step) ────────────────────────
 demucs>=4.0
 
-# ── ACE-Step 1.5 — instalação via git (veja instrução abaixo) ─────────────────
-# Instalar separadamente após clonar o repositório:
-#   pip install -e ./ACE-Step-1.5
-# Ou diretamente:
-#   pip install git+https://github.com/ace-step/ACE-Step-1.5.git
-
-# ── PyTorch — instale a versão compatível com seu CUDA em pytorch.org ─────────
-# Exemplo para CUDA 12.1:
-#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
-# Exemplo para CPU only:
-#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+# ── Áudio — utilitários extras (alguns vêm com ACE-Step, mas explicitamos) ────
+librosa>=0.10
+soundfile>=0.13
+numpy>=1.24
+scipy>=1.11
 
 # ── Utilitários ───────────────────────────────────────────────────────────────
 tqdm
 matplotlib
 IPython
+
+# ── PyTorch — instalar antes deste requirements.txt ───────────────────────────
+# Windows com NVIDIA CUDA 12.8 (versão exigida pelo ACE-Step 1.5):
+#   pip install torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128 \
+#       --index-url https://download.pytorch.org/whl/cu128
+# Linux x86_64 CUDA 12.8:
+#   pip install torch==2.10.0+cu128 torchvision==0.25.0+cu128 torchaudio==2.10.0+cu128 \
+#       --index-url https://download.pytorch.org/whl/cu128
+# macOS (Apple Silicon — CPU/MPS):
+#   pip install torch torchaudio torchvision
+# CPU only (qualquer plataforma — geração muito lenta):
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# ── ACE-Step 1.5 — instalar via git após este requirements ────────────────────
+#   git clone https://github.com/ace-step/ACE-Step-1.5.git
+#   pip install -e ./ACE-Step-1.5
+# (Traz transformers, diffusers, accelerate, einops, numba e mais.)

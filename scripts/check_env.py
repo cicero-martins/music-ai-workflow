@@ -11,10 +11,10 @@ print("=" * 50)
 print("Verificação do ambiente — music-ai-workflow")
 print("=" * 50)
 
-# Python
+# Python — ACE-Step 1.5 exige >=3.11,<3.13
 print(f"\n Python: {sys.version.split()[0]}")
-ok = sys.version_info >= (3, 11)
-print(f"  {'✓' if ok else '✗'} versão {'ok' if ok else 'recomendado 3.11+'}")
+ok = (3, 11) <= sys.version_info < (3, 13)
+print(f"  {'✓' if ok else '✗'} versão {'ok (3.11–3.12)' if ok else 'ACE-Step exige 3.11 ou 3.12'}")
 
 # Pacotes essenciais
 pacotes = {
@@ -43,10 +43,10 @@ try:
         nome = torch.cuda.get_device_name(0)
         vram = torch.cuda.get_device_properties(0).total_memory / 1e9
         print(f"  ✓ CUDA disponível: {nome}  ({vram:.1f} GB VRAM)")
-        if vram < 4:
-            print("  ⚠ menos de 4 GB — geração pode falhar")
+        if vram < 8:
+            print("  ⚠ menos de 8 GB — use offload_to_cpu=True no ACE-Step (geração lenta)")
         elif vram < 12:
-            print("  ⚠ menos de 12 GB — LoRA fine-tune não disponível")
+            print("  ⚠ menos de 12 GB — LoRA fine-tune não disponível (use Colab/RunPod)")
         else:
             print("  ✓ VRAM suficiente para geração e LoRA")
     elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
