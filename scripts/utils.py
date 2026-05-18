@@ -4,6 +4,9 @@ Funções auxiliares compartilhadas entre todos os notebooks do projeto.
 """
 
 from pathlib import Path
+import io
+import json
+import subprocess
 import soundfile as sf
 import numpy as np
 import datetime
@@ -24,11 +27,73 @@ for p in [AUDIO_RAW, AUDIO_STEMS, AUDIO_OUT, MODELS_LORA, DOCS]:
 
 # ── Áudio ─────────────────────────────────────────────────────────────────────
 
+_FORMATOS_NATIVOS = {".wav", ".flac", ".ogg", ".aiff", ".aif"}  # lidos por soundfile direto
+
+
+def _ffmpeg_exe() -> str:
+    """Caminho do binário ffmpeg empacotado pelo imageio-ffmpeg."""
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def _decodificar_via_ffmpeg(caminho: Path) -> tuple[np.ndarray, int]:
+    """Decodifica MP3/MP4/M4A/AAC/... para WAV em memória usando ffmpeg, depois lê com soundfile."""
+    cmd = [_ffmpeg_exe(), "-loglevel", "error", "-i", str(caminho),
+           "-f", "wav", "-acodec", "pcm_s16le", "-"]
+    proc = subprocess.run(cmd, capture_output=True, check=True)
+    return sf.read(io.BytesIO(proc.stdout))
+
+
+def _info_via_ffmpeg(caminho: Path) -> tuple[int, float]:
+    """Retorna (sample_rate, duration_seconds) via ffmpeg para arquivos não-WAV."""
+    cmd = [_ffmpeg_exe(), "-i", str(caminho), "-f", "null", "-"]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    stderr = proc.stderr
+    import re
+    sr_match = re.search(r"(\d+)\s*Hz", stderr)
+    dur_match = re.search(r"Duration:\s*(\d+):(\d+):(\d+\.\d+)", stderr)
+    sr = int(sr_match.group(1)) if sr_match else 0
+    if dur_match:
+        h, m, s = dur_match.groups()
+        dur = int(h) * 3600 + int(m) * 60 + float(s)
+    else:
+        dur = 0.0
+    return sr, dur
+
+
 def carregar_audio(caminho: str | Path) -> tuple[np.ndarray, int]:
-    """Carrega um arquivo WAV. Retorna (array, sample_rate)."""
-    audio, sr = sf.read(str(caminho))
-    print(f"✓ carregado: {Path(caminho).name}  |  {sr} Hz  |  {audio.shape}  |  {len(audio)/sr:.1f}s")
+    """Carrega áudio. WAV/FLAC/OGG via soundfile; MP3/MP4/M4A/AAC via ffmpeg em memória.
+
+    Retorna (array, sample_rate). Array em (samples,) mono ou (samples, channels) estéreo.
+    """
+    caminho = Path(caminho)
+    if caminho.suffix.lower() in _FORMATOS_NATIVOS:
+        audio, sr = sf.read(str(caminho))
+    else:
+        audio, sr = _decodificar_via_ffmpeg(caminho)
+    print(f"✓ carregado: {caminho.name}  |  {sr} Hz  |  {audio.shape}  |  {len(audio)/sr:.1f}s")
     return audio, sr
+
+
+def garantir_wav(caminho: str | Path) -> Path:
+    """Garante WAV no caminho. Se já for WAV, retorna direto. Se for MP3/MP4/M4A/AAC,
+    converte para WAV ao lado (idempotente: pula se o WAV já existir).
+
+    Útil antes de chamar ferramentas que só aceitam WAV (Demucs, torchaudio, ACE-Step CLI).
+    """
+    caminho = Path(caminho)
+    if caminho.suffix.lower() == ".wav":
+        return caminho
+    wav_path = caminho.with_suffix(".wav")
+    if wav_path.exists():
+        print(f"  (WAV já existe: {wav_path.name})")
+        return wav_path
+    print(f"Convertendo {caminho.name} → {wav_path.name}...")
+    cmd = [_ffmpeg_exe(), "-loglevel", "error", "-y",
+           "-i", str(caminho), "-acodec", "pcm_s16le", str(wav_path)]
+    subprocess.run(cmd, check=True)
+    print(f"✓ Convertido: {wav_path.name}  ({wav_path.stat().st_size/1e6:.1f} MB)")
+    return wav_path
 
 
 def salvar_audio(audio: np.ndarray, sr: int, caminho: str | Path) -> Path:
@@ -42,14 +107,19 @@ def salvar_audio(audio: np.ndarray, sr: int, caminho: str | Path) -> Path:
 
 
 def listar_audio(pasta: str | Path = None) -> list[Path]:
-    """Lista arquivos de áudio WAV/MP3 em uma pasta."""
+    """Lista arquivos de áudio em uma pasta. Suporta WAV/MP3/MP4/M4A/FLAC/OGG/AAC."""
     pasta = Path(pasta) if pasta else AUDIO_RAW
-    arquivos = sorted(pasta.glob("*.wav")) + sorted(pasta.glob("*.mp3"))
+    extensoes = ("*.wav", "*.mp3", "*.mp4", "*.m4a", "*.flac", "*.ogg", "*.aac")
+    arquivos = sorted({p for ext in extensoes for p in pasta.glob(ext)})
     if not arquivos:
         print(f"  (nenhum arquivo encontrado em {pasta})")
     for a in arquivos:
-        audio, sr = sf.read(str(a))
-        print(f"  {a.name:40s}  {sr} Hz  {len(audio)/sr:.1f}s")
+        if a.suffix.lower() in _FORMATOS_NATIVOS:
+            info = sf.info(str(a))
+            sr, dur = info.samplerate, info.duration
+        else:
+            sr, dur = _info_via_ffmpeg(a)
+        print(f"  {a.name:40s}  {sr} Hz  {dur:.1f}s")
     return arquivos
 
 
